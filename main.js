@@ -7,7 +7,7 @@ class Block {
     this.details = details;
     this.previousHash = previousHash;
     this.hash = this.calculateHash();
-
+    this.nonce = 0;
   }
   //yukarıyı alıp, hashleyeceğiz sha ile
   calculateHash() {
@@ -15,15 +15,27 @@ class Block {
       this.index +
         this.previousHash +
         this.timestamp +
-        JSON.stringify(this.details)
+        JSON.stringify(this.details) +
+        this.nonce
     ).toString();
   }
-}
 
+  mineBlock(difficulty) {
+      //diff+1 length'inde 0'lardan oluşan array oluşturduk, eşit olana kadar aradık.
+    while (
+      this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")
+    ) {
+      this.nonce++;
+      this.hash = this.calculateHash();
+    }
+    console.log("Block mined: " + this.hash);
+  }
+}
 
 class Blockchain {
   constructor() {
     this.chain = [this.createGenesisBlock()];
+    this.difficulty = 4;
   }
 
   createGenesisBlock() {
@@ -36,7 +48,7 @@ class Blockchain {
 
   addBlock(newBlock) {
     newBlock.previousHash = this.getLatestBlock().hash; //bir öncekinin hash'ini al kontrol amaçlı
-    newBlock.hash = newBlock.calculateHash(); //her yeni block oluştuğunda hash'i yeniden updatelemen lazım
+    newBlock.mineBlock(this.difficulty);
     this.chain.push(newBlock);
   }
 
@@ -50,7 +62,7 @@ class Blockchain {
       }
       if (currentBlock.previousHash !== previousBlock.hash) {
         return false;
-      }   
+      }
     }
 
     return true;
@@ -66,10 +78,7 @@ console.log(JSON.stringify(aCoin, null, 4));
 
 console.error("Is block valid? " + aCoin.isChainValid());
 
-aCoin.chain[1].details = {amount: 20};
-
-console.log("Now? " + aCoin.isChainValid());
-
-aCoin.chain[1].details = {amount: 2};
-
-console.log("Now? " + aCoin.isChainValid());
+// aCoin.chain[1].details = { amount: 20 };
+// console.log("Now? " + aCoin.isChainValid());
+// aCoin.chain[1].details = { amount: 2 };
+// console.log("Now? " + aCoin.isChainValid());
