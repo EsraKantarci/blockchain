@@ -9,8 +9,6 @@ class Transaction {
 }
 
 class Block {
-
-
   constructor(timestamp, transactions, previousHash = "") {
     this.timestamp = timestamp;
     this.transactions = transactions;
@@ -21,7 +19,7 @@ class Block {
   //yukarıyı alıp, hashleyeceğiz sha ile
   calculateHash() {
     return SHA256(
-        this.previousHash +
+      this.previousHash +
         this.timestamp +
         JSON.stringify(this.transactions) +
         this.nonce
@@ -71,32 +69,28 @@ class Blockchain {
     this.chain.push(block);
 
     this.pendingTransactions = [
-        new Transaction(null, miningRewardAddress, this.miningReward)
+      new Transaction(null, miningRewardAddress, this.miningReward),
     ];
-
   }
 
-  createTransaction(transaction){
-      this.pendingTransactions.push(transaction);
+  createTransaction(transaction) {
+    this.pendingTransactions.push(transaction);
   }
 
+  getBalanceOfAddress(address) {
+    let balance = 0;
 
-  getBalanceOfAddress(address){
-      let balance = 0;
-
-      for(const block of this.chain){
-          for(const trans of block.transactions){
-              if(trans.fromAddress === address){
-                  balance -= trans.amount;
-              }
-              if(trans.toAddress === address){
-                  balance += trans.amount;
-              }
-              
-          }
-
+    for (const block of this.chain) {
+      for (const trans of block.transactions) {
+        if (trans.fromAddress === address) {
+          balance -= trans.amount;
+        }
+        if (trans.toAddress === address) {
+          balance += trans.amount;
+        }
       }
-      return balance;
+    }
+    return balance;
   }
 
   isChainValid() {
