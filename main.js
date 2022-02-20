@@ -1,10 +1,19 @@
 const SHA256 = require("crypto-js/sha256");
 
+class Transaction {
+  constructor(fromAddress, toAddress, amount) {
+    this.fromAddress = fromAddress;
+    this.toAddress = toAddress;
+    this.amount = amount;
+  }
+}
+
 class Block {
-  constructor(index, timestamp, details, previousHash = "") {
-    this.index = index;
+
+
+  constructor(timestamp, transactions, previousHash = "") {
     this.timestamp = timestamp;
-    this.details = details;
+    this.transactions = transactions;
     this.previousHash = previousHash;
     this.hash = this.calculateHash();
     this.nonce = 0;
@@ -12,16 +21,15 @@ class Block {
   //yukarıyı alıp, hashleyeceğiz sha ile
   calculateHash() {
     return SHA256(
-      this.index +
         this.previousHash +
         this.timestamp +
-        JSON.stringify(this.details) +
+        JSON.stringify(this.transactions) +
         this.nonce
     ).toString();
   }
 
   mineBlock(difficulty) {
-      //diff+1 length'inde 0'lardan oluşan array oluşturduk, eşit olana kadar aradık.
+    //diff+1 length'inde 0'lardan oluşan array oluşturduk, eşit olana kadar aradık.
     while (
       this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")
     ) {
@@ -35,7 +43,9 @@ class Block {
 class Blockchain {
   constructor() {
     this.chain = [this.createGenesisBlock()];
-    this.difficulty = 4;
+    this.difficulty = 2;
+    this.pendingTransactions = [];
+    this.miningReward = 100;
   }
 
   createGenesisBlock() {
@@ -46,10 +56,47 @@ class Blockchain {
     return this.chain[this.chain.length - 1];
   }
 
-  addBlock(newBlock) {
-    newBlock.previousHash = this.getLatestBlock().hash; //bir öncekinin hash'ini al kontrol amaçlı
-    newBlock.mineBlock(this.difficulty);
-    this.chain.push(newBlock);
+  //   addBlock(newBlock) {
+  //     newBlock.previousHash = this.getLatestBlock().hash; //bir öncekinin hash'ini al kontrol amaçlı
+  //     newBlock.mineBlock(this.difficulty);
+  //     this.chain.push(newBlock);
+  //   }
+
+  //addBlock yerine yeni fonksiyon:
+  minePendingTransactions(miningRewardAddress) {
+    let block = new Block(Date.now(), this.pendingTransactions);
+    block.mineBlock(this.difficulty);
+
+    console.log("Block is mined");
+    this.chain.push(block);
+
+    this.pendingTransactions = [
+        new Transaction(null, miningRewardAddress, this.miningReward)
+    ];
+
+  }
+
+  createTransaction(transaction){
+      this.pendingTransactions.push(transaction);
+  }
+
+
+  getBalanceOfAddress(address){
+      let balance = 0;
+
+      for(const block of this.chain){
+          for(const trans of block.transactions){
+              if(trans.fromAddress === address){
+                  balance -= trans.amount;
+              }
+              if(trans.toAddress === address){
+                  balance += trans.amount;
+              }
+              
+          }
+
+      }
+      return balance;
   }
 
   isChainValid() {
@@ -70,15 +117,28 @@ class Blockchain {
 }
 
 let aCoin = new Blockchain();
-aCoin.addBlock(new Block(1, "21/10/2022", { amount: 2 }));
-aCoin.addBlock(new Block(2, "23/10/2022", { amount: 4 }));
-aCoin.addBlock(new Block(3, "21/10/2022", { amount: 10 }));
+// aCoin.addBlock(new Block(1, "21/10/2022", { amount: 2 }));
+// aCoin.addBlock(new Block(2, "23/10/2022", { amount: 4 }));
+// aCoin.addBlock(new Block(3, "21/10/2022", { amount: 10 }));
 
-console.log(JSON.stringify(aCoin, null, 4));
+// console.log(JSON.stringify(aCoin, null, 4));
 
-console.error("Is block valid? " + aCoin.isChainValid());
+// console.error("Is block valid? " + aCoin.isChainValid());
 
 // aCoin.chain[1].details = { amount: 20 };
 // console.log("Now? " + aCoin.isChainValid());
 // aCoin.chain[1].details = { amount: 2 };
 // console.log("Now? " + aCoin.isChainValid());
+
+aCoin.createTransaction(new Transaction("a", "b", 100));
+aCoin.createTransaction(new Transaction("b", "a", 20));
+
+console.log("Starting ... ");
+
+aCoin.minePendingTransactions("c");
+
+console.log("C'nin balance'ı: ", aCoin.getBalanceOfAddress("c"));
+aCoin.minePendingTransactions("c");
+
+console.log("C'nin balance'ı 2: ", aCoin.getBalanceOfAddress("c"));
+console.log("A'nin balance'ı: ", aCoin.getBalanceOfAddress("a"));
